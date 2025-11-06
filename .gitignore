@@ -34,6 +34,11 @@ server/.env.local
 # Supabase
 .supabase
 
+# Test/development scripts with sensitive data
+server/create-table-*.js
+server/*-password*.js
+server/*-connection*.js
+
 # Build outputs
 build
 *.tsbuildinfo

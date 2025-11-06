@@ -22,8 +22,7 @@ const formatListJSX = (arr: string[] | undefined): React.ReactNode => {
 const NO_BREAK_STYLE: React.CSSProperties = {
   pageBreakInside: 'avoid',
   breakInside: 'avoid',
-  WebkitPageBreakInside: 'avoid',
-};
+} as React.CSSProperties;
 
 export const FilledPrintableForm: React.FC<FilledPrintableFormProps> = ({ data, onClose }) => {
   const qs = data.quickSummary || {};
@@ -54,7 +53,7 @@ export const FilledPrintableForm: React.FC<FilledPrintableFormProps> = ({ data, 
     { key: 'missionValues', label: 'Mission/Values' },
   ];
   const orderedPriorities = priorityFields
-    .map(f => ({ ...f, rank: ps[f.key] || 999 }))
+    .map(f => ({ ...f, rank: (ps as any)[f.key] || 999 }))
     .sort((a, b) => a.rank - b.rank);
 
   return (
