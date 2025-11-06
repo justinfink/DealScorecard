@@ -141,17 +141,18 @@ app.post('/api/submit', async (req, res) => {
       console.warn('Supabase not configured - submission not saved to database');
     }
 
-    // Generate PDF with filled data (non-blocking, with timeout)
+    // Generate PDF with filled data - EXACT SAME AS /api/generate-pdf
     let pdfBuffer = null;
     try {
       const pdfPromise = generateFilledPDF(submissionData);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('PDF generation timeout')), 10000)
+        setTimeout(() => reject(new Error('PDF generation timeout')), 30000)
       );
       pdfBuffer = await Promise.race([pdfPromise, timeoutPromise]);
       console.log('PDF generated successfully');
     } catch (pdfError) {
       console.error('PDF generation error (non-fatal):', pdfError.message);
+      console.error('PDF error stack:', pdfError.stack);
       // Continue without PDF - submission is still processed
     }
 
@@ -192,6 +193,53 @@ app.post('/api/submit', async (req, res) => {
       dbSaved: false,
       pdfGenerated: false,
       pdf: null,
+    });
+  }
+});
+
+// Generate PDF only (for client-side export)
+app.post('/api/generate-pdf', async (req, res) => {
+  try {
+    const submissionData = req.body;
+    
+    // Generate PDF with filled data - EXACT SAME AS /api/submit
+    let pdfBuffer = null;
+    try {
+      const pdfPromise = generateFilledPDF(submissionData);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('PDF generation timeout')), 30000)
+      );
+      pdfBuffer = await Promise.race([pdfPromise, timeoutPromise]);
+      console.log('PDF generated successfully for export');
+    } catch (pdfError) {
+      console.error('PDF generation error:', pdfError.message);
+      console.error('PDF error stack:', pdfError.stack);
+      return res.status(500).json({
+        success: false,
+        error: 'PDF generation failed',
+        message: pdfError.message,
+      });
+    }
+
+    if (pdfBuffer) {
+      const pdfBase64 = pdfBuffer.toString('base64');
+      res.setHeader('Content-Type', 'application/json');
+      res.json({
+        success: true,
+        pdf: pdfBase64,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'PDF generation failed',
+      });
+    }
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message || 'Unknown error',
     });
   }
 });

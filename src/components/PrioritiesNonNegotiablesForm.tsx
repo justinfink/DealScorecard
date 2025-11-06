@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { PriorityStack, NonNegotiables } from '../types';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, GripVertical, Edit2, Save, XCircle } from 'lucide-react';
 
 interface PrioritiesNonNegotiablesData {
   priorityStack: PriorityStack;
@@ -14,7 +17,10 @@ interface PrioritiesNonNegotiablesFormProps {
 
 export const PrioritiesNonNegotiablesForm: React.FC<PrioritiesNonNegotiablesFormProps> = ({ data, onChange }) => {
   const [newExclusion, setNewExclusion] = useState<{ type: keyof NonNegotiables; value: string } | null>(null);
+  const [editingPriority, setEditingPriority] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
 
+  // Priority fields with editable labels
   const priorityFields = [
     { key: 'growthRate' as const, label: 'Growth Rate' },
     { key: 'profitability' as const, label: 'Profitability' },
@@ -26,10 +32,85 @@ export const PrioritiesNonNegotiablesForm: React.FC<PrioritiesNonNegotiablesForm
     { key: 'missionValues' as const, label: 'Mission/Values' },
   ];
 
-  const updatePriority = (field: keyof PriorityStack, value: number) => {
+  // Store custom labels (if user edits them) - persist in localStorage
+  const [customLabels, setCustomLabels] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('priority-custom-labels');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Save custom labels to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('priority-custom-labels', JSON.stringify(customLabels));
+    } catch (error) {
+      console.error('Error saving custom labels:', error);
+    }
+  }, [customLabels]);
+
+  // Convert priority stack to ordered array for drag and drop
+  const [orderedPriorities, setOrderedPriorities] = useState(() => {
+    return priorityFields.map((field) => ({
+      ...field,
+      currentRank: data.priorityStack[field.key] || 0,
+    })).sort((a, b) => {
+      const rankA = a.currentRank || 999;
+      const rankB = b.currentRank || 999;
+      return rankA - rankB || priorityFields.indexOf(a) - priorityFields.indexOf(b);
+    });
+  });
+
+  // Sync when data changes externally
+  useEffect(() => {
+    const sorted = priorityFields.map((field) => ({
+      ...field,
+      currentRank: data.priorityStack[field.key] || 0,
+    })).sort((a, b) => {
+      const rankA = a.currentRank || 999;
+      const rankB = b.currentRank || 999;
+      return rankA - rankB || priorityFields.indexOf(a) - priorityFields.indexOf(b);
+    });
+    setOrderedPriorities(sorted);
+  }, [data.priorityStack]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px of movement before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = orderedPriorities.findIndex(item => item.key === active.id);
+    const newIndex = orderedPriorities.findIndex(item => item.key === over.id);
+
+    const newItems = arrayMove(orderedPriorities, oldIndex, newIndex);
+
+    // Update ranks based on new order
+    const newPriorityStack: PriorityStack = { ...data.priorityStack };
+    newItems.forEach((item, index) => {
+      newPriorityStack[item.key] = index + 1;
+    });
+
+    setOrderedPriorities(newItems.map((item, index) => ({
+      ...item,
+      currentRank: index + 1,
+    })));
+
     onChange({
       ...data,
-      priorityStack: { ...data.priorityStack, [field]: value },
+      priorityStack: newPriorityStack,
     });
   };
 
@@ -60,30 +141,184 @@ export const PrioritiesNonNegotiablesForm: React.FC<PrioritiesNonNegotiablesForm
     });
   };
 
+  const startEditing = (key: string, currentLabel: string) => {
+    setEditingPriority(key);
+    setEditValue(customLabels[key] || currentLabel);
+  };
+
+  const saveEdit = (key: string) => {
+    if (editValue.trim()) {
+      setCustomLabels({ ...customLabels, [key]: editValue.trim() });
+      setEditingPriority(null);
+      setEditValue('');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingPriority(null);
+    setEditValue('');
+  };
+
+  const getPriorityLabel = (key: string, defaultLabel: string) => {
+    return customLabels[key] || defaultLabel;
+  };
+
+  // Sortable Priority Item Component
+  const SortablePriorityItem = ({ 
+    item, 
+    editingPriority, 
+    editValue, 
+    setEditValue, 
+    startEditing, 
+    saveEdit, 
+    cancelEdit, 
+    getPriorityLabel 
+  }: {
+    item: typeof priorityFields[0] & { currentRank: number };
+    editingPriority: string | null;
+    editValue: string;
+    setEditValue: (value: string) => void;
+    startEditing: (key: string, currentLabel: string) => void;
+    saveEdit: (key: string) => void;
+    cancelEdit: () => void;
+    getPriorityLabel: (key: string, defaultLabel: string) => string;
+  }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: item.key });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={`flex items-center gap-3 p-3 border rounded-lg bg-white cursor-grab active:cursor-grabbing ${
+          isDragging ? 'shadow-lg border-torchlight-500 opacity-50' : 'border-gray-300 hover:border-torchlight-300'
+        }`}
+      >
+        <div className="text-gray-400 hover:text-gray-600 pointer-events-none">
+          <GripVertical className="w-5 h-5" />
+        </div>
+        {editingPriority === item.key ? (
+          <div className="flex-1 flex items-center gap-2">
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  saveEdit(item.key);
+                }
+                if (e.key === 'Escape') {
+                  cancelEdit();
+                }
+              }}
+              className="flex-1 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-torchlight-500 focus:border-transparent text-sm"
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                saveEdit(item.key);
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="text-torchlight-600 hover:text-torchlight-800"
+              title="Save"
+            >
+              <Save className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                cancelEdit();
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="text-gray-600 hover:text-gray-800"
+              title="Cancel"
+            >
+              <XCircle className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <span 
+                     className="flex-1 text-sm font-medium text-gray-900 cursor-text hover:text-torchlight-600"
+              onClick={(e) => {
+                e.stopPropagation();
+                startEditing(item.key, item.label);
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title="Click to edit"
+            >
+              {getPriorityLabel(item.key, item.label)}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                startEditing(item.key, item.label);
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+                     className="text-torchlight-600 hover:text-torchlight-800"
+              title="Edit label"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-8">
       <p className="text-gray-600 mb-4">Rank your priorities and define hard stops.</p>
 
       {/* Priority Stack */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Priority Stack (rank 1-8)</h3>
-        <div className="space-y-3">
-          {priorityFields.map(({ key, label }) => (
-            <div key={key} className="flex items-center gap-4">
-              <label className="w-48 text-sm font-medium text-gray-700">{label}</label>
-              <input
-                type="number"
-                min="1"
-                max="8"
-                value={data.priorityStack[key] || ''}
-                onChange={(e) => updatePriority(key, parseInt(e.target.value) || 0)}
-                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
-                placeholder="Rank"
-              />
-              <span className="text-xs text-gray-500">(1 = highest priority)</span>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Priority Stack</h3>
+        <p className="text-sm text-gray-600 mb-4">Drag and drop to reorder priorities (top = highest priority)</p>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={orderedPriorities.map(item => item.key)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-2">
+              {orderedPriorities.map((item) => (
+                <SortablePriorityItem
+                  key={item.key}
+                  item={item}
+                  editingPriority={editingPriority}
+                  editValue={editValue}
+                  setEditValue={setEditValue}
+                  startEditing={startEditing}
+                  saveEdit={saveEdit}
+                  cancelEdit={cancelEdit}
+                  getPriorityLabel={getPriorityLabel}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Non-Negotiables */}
@@ -113,7 +348,7 @@ export const PrioritiesNonNegotiablesForm: React.FC<PrioritiesNonNegotiablesForm
                           nonNegotiables: { ...data.nonNegotiables, [key]: updated },
                         });
                       }}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                       placeholder={placeholder}
                     />
                     <button
@@ -137,14 +372,14 @@ export const PrioritiesNonNegotiablesForm: React.FC<PrioritiesNonNegotiablesForm
                           saveExclusion();
                         }
                       }}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                       placeholder={placeholder}
                       autoFocus
                     />
                     <button
                       type="button"
                       onClick={saveExclusion}
-                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      className="px-3 py-2 bg-torchlight-600 text-white rounded-lg hover:bg-torchlight-700"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -160,7 +395,7 @@ export const PrioritiesNonNegotiablesForm: React.FC<PrioritiesNonNegotiablesForm
                   <button
                     type="button"
                     onClick={() => addExclusion(key)}
-                    className="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 flex items-center gap-2"
+                    className="px-4 py-2 text-sm text-torchlight-600 hover:text-torchlight-700 flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     Add Exclusion

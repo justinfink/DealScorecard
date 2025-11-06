@@ -37,7 +37,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 onClick={() => onSectionClick(section.id)}
                 className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center gap-3 ${
                   isActive
-                    ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600 font-semibold'
+                    ? 'bg-torchlight-50 text-torchlight-700 border-l-4 border-torchlight-600 font-semibold'
                     : isCompleted
                     ? 'text-gray-700 hover:bg-gray-50'
                     : 'text-gray-500 hover:bg-gray-50'
@@ -45,12 +45,12 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
               >
                 <div className="flex-shrink-0">
                   {isCompleted ? (
-                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-torchlight-green-500 flex items-center justify-center">
                       <Check className="w-4 h-4 text-white" />
                     </div>
                   ) : (
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      isActive ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'
+                      isActive ? 'border-torchlight-600 bg-torchlight-600 text-white' : 'border-gray-300'
                     }`}>
                       <span className={`text-xs font-semibold ${isActive ? 'text-white' : 'text-gray-400'}`}>
                         {index + 1}

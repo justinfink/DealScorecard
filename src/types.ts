@@ -6,13 +6,11 @@ export interface QuickSummary {
   primaryThesis: string;
   rightToWin: string[]; // 3 bullets
   nonNegotiables: string[]; // max 5
-  goNoGo: 'go' | 'conditional' | 'no-go';
 }
 
 // Background & Edge
 export interface ExperienceMap {
   functionalStrengths: string;
-  industryFamiliarity: number; // 1-5
   dealExposure: string;
   operatingSuperpowers: string[]; // 3
   knownGaps: string[]; // 3
@@ -67,7 +65,6 @@ export interface SearchConstraints {
   ebitdaMax: number;
   ebitdaMarginMin: number;
   ebitdaMarginMax: number;
-  headcountMin: number;
   headcountMax: number;
   geographyMustHave: string[];
   geographyNiceToHave: string[];

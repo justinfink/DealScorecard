@@ -61,7 +61,7 @@ export const BackgroundEdgeForm: React.FC<BackgroundEdgeFormProps> = ({ data, on
 
       {/* Experience Map */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">1.1 Experience Map</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Experience Map</h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -76,23 +76,6 @@ export const BackgroundEdgeForm: React.FC<BackgroundEdgeFormProps> = ({ data, on
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Industry Familiarity (rank 1–5) *
-            </label>
-            <select
-              value={data.experienceMap.industryFamiliarity}
-              onChange={(e) => handleChange('experienceMap', 'industryFamiliarity', parseInt(e.target.value))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value={0}>Select...</option>
-              {[1, 2, 3, 4, 5].map((num) => (
-                <option key={num} value={num}>
-                  {num} - {num === 1 ? 'Novice' : num === 5 ? 'Expert' : 'Intermediate'}
-                </option>
-              ))}
-            </select>
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -179,7 +162,7 @@ export const BackgroundEdgeForm: React.FC<BackgroundEdgeFormProps> = ({ data, on
 
       {/* Credibility Anchors */}
       <div className="border-t border-gray-200 pt-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">1.2 Credibility Anchors</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Credibility Anchors</h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

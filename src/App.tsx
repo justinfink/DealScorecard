@@ -6,13 +6,13 @@ import { DealScorecard } from './components/DealScorecard';
 import { SearchConstraintsForm } from './components/SearchConstraintsForm';
 import { PrioritiesNonNegotiablesForm } from './components/PrioritiesNonNegotiablesForm';
 import { SimpleTextForm } from './components/SimpleTextForm';
-import { PrintableForm } from './components/PrintableForm';
+import { FilledPrintableForm } from './components/FilledPrintableForm';
 import { SidebarNavigation } from './components/SidebarNavigation';
 import { OnboardingData } from './types';
 import { saveOnboardingData, loadOnboardingData } from './utils/storage';
 import { createInitialData } from './utils/initialData';
-import { exportToPDF, printForm } from './utils/pdfExport';
-import { Check, Printer, FileDown } from 'lucide-react';
+import { exportToPDF } from './utils/pdfExport';
+import { Check, FileDown } from 'lucide-react';
 
 interface Section {
   id: string;
@@ -27,8 +27,6 @@ const SECTIONS: Section[] = [
   { id: 'priorities', label: 'Priorities & Non-Negotiables' },
   { id: 'search-constraints', label: 'Search Constraints' },
   { id: 'right-to-win', label: 'Right-to-Win' },
-  { id: 'icp-buying', label: 'ICP & Buying Motion' },
-  { id: 'risk-mitigations', label: 'Risk Areas' },
   { id: 'sub-niche', label: 'Sub-Niche Identification' },
   { id: 'deal-flow', label: 'Deal Flow Sufficiency' },
   { id: 'operating-plan', label: 'Operating Plan' },
@@ -263,25 +261,53 @@ function App() {
     }
   };
 
-  const handlePrint = () => {
-    setShowPrintableForm(true);
-    setTimeout(() => {
-      printForm();
-      setTimeout(() => setShowPrintableForm(false), 500);
-    }, 100);
-  };
 
   const handleExportPDF = async () => {
-    setShowPrintableForm(true);
     try {
-      setTimeout(async () => {
-        await exportToPDF('printable-form-container', 'torchlight-onboarding-form.pdf');
-        setShowPrintableForm(false);
-      }, 100);
-    } catch (error) {
+      const API_URL = (import.meta as any).env?.VITE_API_URL || '/api';
+      
+      console.log('Exporting PDF via:', `${API_URL}/generate-pdf`);
+      
+      const response = await fetch(`${API_URL}/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      console.log('Export PDF response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Export PDF error response:', errorText);
+        throw new Error(`Server error (${response.status}): ${errorText.substring(0, 200)}`);
+      }
+
+      const result = await response.json();
+      console.log('Export PDF result:', { success: result.success, hasPdf: !!result.pdf });
+      
+      if (result.success && result.pdf) {
+        const pdfBlob = new Blob(
+          [Uint8Array.from(atob(result.pdf), c => c.charCodeAt(0))],
+          { type: 'application/pdf' }
+        );
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `torchlight-onboarding-form-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        console.log('✅ PDF exported successfully');
+      } else {
+        console.error('Export PDF failed:', result);
+        throw new Error(result.error || result.message || 'PDF generation failed');
+      }
+    } catch (error: any) {
       console.error('Error exporting PDF:', error);
-      alert('Error exporting PDF. Please try printing instead.');
-      setShowPrintableForm(false);
+      alert(`Failed to export PDF: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -296,7 +322,7 @@ function App() {
           <span className="text-2xl font-bold text-gray-900">{number}</span>
           <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
         </div>
-        <div className="ml-11 h-1 w-20 bg-blue-600 rounded"></div>
+        <div className="ml-11 h-1 w-20 bg-torchlight-600 rounded"></div>
       </div>
       {content}
     </section>
@@ -307,22 +333,21 @@ function App() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 bg-white shadow-sm border-b border-gray-200 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Torchlight</h1>
-            <p className="text-sm text-gray-600">Operating System for ETA</p>
+          <div className="flex items-center gap-3">
+              <img 
+                src="/Torch.png" 
+                alt="Torchlight Logo" 
+                className="h-10 w-10 object-contain"
+              />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Torchlight</h1>
+              <p className="text-sm text-gray-600">Operating System for ETA</p>
+            </div>
           </div>
           <div className="flex gap-3">
             <button
-              onClick={handlePrint}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center gap-2 transition-colors"
-              title="Print form"
-            >
-              <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline text-sm">Print</span>
-            </button>
-            <button
               onClick={handleExportPDF}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+              className="px-4 py-2 bg-torchlight-600 text-white rounded-lg hover:bg-torchlight-700 flex items-center gap-2 transition-colors"
               title="Export to PDF"
             >
               <FileDown className="w-4 h-4" />
@@ -344,7 +369,7 @@ function App() {
       <main className="ml-64 pt-20">
         <div className="max-w-4xl mx-auto px-8 py-8 space-y-16">
           {/* Contact Section */}
-          {renderSection('contact', 'Contact Information', '0', (
+          {renderSection('contact', 'Contact Information', '1', (
             <ContactInfoForm
               email={data.email}
               onChange={(email) => setData({ ...data, email })}
@@ -352,7 +377,7 @@ function App() {
           ))}
 
           {/* Quick Summary */}
-          {renderSection('quick-summary', 'Quick Summary', '0', (
+          {renderSection('quick-summary', 'Quick Summary', '2', (
             <QuickSummaryForm
               data={data.quickSummary}
               onChange={(quickSummary) => setData({ ...data, quickSummary })}
@@ -360,7 +385,7 @@ function App() {
           ))}
 
           {/* Background & Edge */}
-          {renderSection('background-edge', 'Background & Edge', '1', (
+          {renderSection('background-edge', 'Background & Edge', '3', (
             <BackgroundEdgeForm
               data={data.backgroundEdge}
               onChange={(backgroundEdge) => setData({ ...data, backgroundEdge })}
@@ -368,7 +393,7 @@ function App() {
           ))}
 
           {/* Deal Scorecard */}
-          {renderSection('scorecard', 'Personal Deal Scorecard', '2', (
+          {renderSection('scorecard', 'Personal Deal Scorecard', '4', (
             <DealScorecard
               factors={data.scorecard}
               onChange={(scorecard) => setData({ ...data, scorecard })}
@@ -376,7 +401,7 @@ function App() {
           ))}
 
           {/* Priorities & Non-Negotiables */}
-          {renderSection('priorities', 'Priorities & Non-Negotiables', '3', (
+          {renderSection('priorities', 'Priorities & Non-Negotiables', '5', (
             <PrioritiesNonNegotiablesForm
               data={data.prioritiesNonNegotiables}
               onChange={(prioritiesNonNegotiables) => setData({ ...data, prioritiesNonNegotiables })}
@@ -384,7 +409,7 @@ function App() {
           ))}
 
           {/* Search Constraints */}
-          {renderSection('search-constraints', 'Search Constraints', '4', (
+          {renderSection('search-constraints', 'Search Constraints', '6', (
             <SearchConstraintsForm
               data={data.searchConstraints}
               onChange={(searchConstraints) => setData({ ...data, searchConstraints })}
@@ -392,7 +417,7 @@ function App() {
           ))}
 
           {/* Right-to-Win Mechanics */}
-          {renderSection('right-to-win', 'Right-to-Win Mechanics', '5', (
+          {renderSection('right-to-win', 'Right-to-Win Mechanics', '7', (
             <SimpleTextForm
               title="Right-to-Win Mechanics"
               description="How you'll win deals vs. other buyers."
@@ -406,51 +431,6 @@ function App() {
               values={data.rightToWinMechanics as any}
               onChange={(values) => setData({ ...data, rightToWinMechanics: values as any })}
             />
-          ))}
-
-          {/* ICP & Buying Motion */}
-          {renderSection('icp-buying', 'ICP & Buying Motion', '6', (
-            <SimpleTextForm
-              title="ICP & Buying Motion"
-              description="Understanding your target company's customers."
-              fields={[
-                { key: 'primaryICP', label: 'Primary ICP (Who They Sell To)', type: 'textarea', rows: 2 },
-                { key: 'budgetOwners', label: 'Budget Owners / Titles', type: 'text' },
-                { key: 'buyingTriggers', label: 'Buying Triggers', type: 'textarea', rows: 2 },
-                { key: 'whereTheyHangOut', label: 'Where They Hang Out (Events, Forums, Tools)', type: 'text' },
-                { key: 'salesCycleLength', label: 'Sales Cycle Length & Blockers', type: 'text' },
-              ]}
-              values={data.icpBuyingMotion as any}
-              onChange={(values) => setData({ ...data, icpBuyingMotion: values as any })}
-            />
-          ))}
-
-          {/* Risk Areas & Mitigations */}
-          {renderSection('risk-mitigations', 'Risk Areas & Mitigations', '7', (
-            <div className="space-y-4">
-              <p className="text-gray-600 mb-4">
-                Identify risks and mitigation strategies. Decision rule: more than two H/H cells → elevate to IC, require downside case and earn-out protections.
-              </p>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <p className="text-sm text-yellow-900">
-                  <strong>Note:</strong> Risk mitigation table coming soon. For now, use the notes section below.
-                </p>
-              </div>
-              <textarea
-                rows={6}
-                value={JSON.stringify(data.riskMitigations, null, 2)}
-                onChange={(e) => {
-                  try {
-                    const parsed = JSON.parse(e.target.value);
-                    setData({ ...data, riskMitigations: parsed });
-                  } catch {
-                    // Invalid JSON, ignore
-                  }
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-                placeholder="Risk mitigations JSON (coming soon - simplified form)"
-              />
-            </div>
           ))}
 
           {/* Sub-Niche Identification */}
@@ -476,7 +456,7 @@ function App() {
                           subNicheIdentification: { ...data.subNicheIdentification, coreNicheCandidates: updated },
                         });
                       }}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                       placeholder={`Niche ${index + 1}`}
                     />
                   ))}
@@ -494,7 +474,7 @@ function App() {
                     ...data,
                     subNicheIdentification: { ...data.subNicheIdentification, keywordClusterA: e.target.value },
                   })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                   placeholder="e.g., healthcare consulting, medical billing"
                 />
               </div>
@@ -510,7 +490,7 @@ function App() {
                     ...data,
                     subNicheIdentification: { ...data.subNicheIdentification, keywordClusterB: e.target.value },
                   })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                   placeholder="e.g., compliance services, regulatory consulting"
                 />
               </div>
@@ -529,12 +509,31 @@ function App() {
                       similarToSeedList: e.target.value.split(',').map(s => s.trim()).filter(s => s),
                     },
                   })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                   placeholder="Company A, Company B, Company C..."
                 />
               </div>
             </div>
           ))}
+
+          {/* Torchlight Team Responsibility Notice */}
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg shadow-sm">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                  Torchlight Team Responsibility
+                </h3>
+                <p className="text-sm text-yellow-700 mb-3">
+                  The following four sections (Deal Flow Sufficiency Test, Operating Plan Hooks, Funnel & KPI, and Decision Gate) are primarily the responsibility of the Torchlight team. However, you may fill in information if you have relevant insights or preferences.
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* Deal Flow Sufficiency */}
           {renderSection('deal-flow', 'Deal Flow Sufficiency Test', '9', (
@@ -566,7 +565,7 @@ function App() {
                             },
                           },
                         })}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-torchlight-600 border-gray-300 rounded focus:ring-torchlight-500"
                       />
                       <span className="text-sm text-gray-700">{label}</span>
                     </label>
@@ -592,7 +591,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -610,7 +609,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -628,7 +627,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -650,7 +649,7 @@ function App() {
                                 },
                               },
                             })}
-                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                            className="w-4 h-4 text-torchlight-600 border-gray-300 focus:ring-torchlight-500"
                           />
                           <span className="text-sm text-gray-700 capitalize">
                             {option === 'sufficient' && '✅ Sufficient'}
@@ -690,7 +689,7 @@ function App() {
                             operatingPlanHooks: { ...data.operatingPlanHooks, hundredDayValuePlan: updated },
                           });
                         }}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                         placeholder={`Move ${index + 1}`}
                       />
                     </div>
@@ -709,7 +708,7 @@ function App() {
                     ...data,
                     operatingPlanHooks: { ...data.operatingPlanHooks, retentionPlan: e.target.value },
                   })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                   placeholder="How will you retain key personnel?"
                 />
               </div>
@@ -725,7 +724,7 @@ function App() {
                     ...data,
                     operatingPlanHooks: { ...data.operatingPlanHooks, pricingUpliftLevers: e.target.value },
                   })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                   placeholder="How can you increase pricing or margins?"
                 />
               </div>
@@ -741,7 +740,7 @@ function App() {
                     ...data,
                     operatingPlanHooks: { ...data.operatingPlanHooks, crossSellAssets: e.target.value },
                   })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                   placeholder="How can you cross-sell or leverage existing assets?"
                 />
               </div>
@@ -771,7 +770,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -789,7 +788,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -807,7 +806,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -832,7 +831,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -851,7 +850,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -870,7 +869,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -889,7 +888,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -908,7 +907,7 @@ function App() {
                           },
                         },
                       })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -936,7 +935,7 @@ function App() {
                           ...data,
                           decisionGate: { ...data.decisionGate, fitVerdict: option },
                         })}
-                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        className="w-4 h-4 text-torchlight-600 border-gray-300 focus:ring-torchlight-500"
                       />
                       <span className="text-sm text-gray-700 capitalize">
                         {option === 'proceed' && '✅ Proceed'}
@@ -959,7 +958,7 @@ function App() {
                     ...data,
                     decisionGate: { ...data.decisionGate, rationale: e.target.value },
                   })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                   placeholder="Explain your decision..."
                 />
               </div>
@@ -975,7 +974,7 @@ function App() {
                     ...data,
                     decisionGate: { ...data.decisionGate, nextActions: e.target.value },
                   })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-torchlight-500 focus:border-transparent"
                   placeholder="e.g., John - Complete market research by 1/15/2024"
                 />
               </div>
@@ -996,7 +995,7 @@ function App() {
                {submitStatus.type && (
                  <div className={`p-4 rounded-lg text-left ${
                    submitStatus.type === 'success' 
-                     ? 'bg-green-50 border border-green-200 text-green-900' 
+                     ? 'bg-torchlight-50 border border-torchlight-200 text-torchlight-900' 
                      : 'bg-red-50 border border-red-200 text-red-900'
                  }`}>
                    <div className="whitespace-pre-line text-sm font-medium mb-2">{submitStatus.message}</div>
@@ -1012,7 +1011,7 @@ function App() {
                <button
                  onClick={handleSubmit}
                  disabled={isSubmitting}
-                 className="px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 mx-auto text-lg font-semibold transition-colors"
+                 className="px-8 py-4 bg-torchlight-green-600 text-white rounded-lg hover:bg-torchlight-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 mx-auto text-lg font-semibold transition-colors"
                >
                  {isSubmitting ? (
                    <>
@@ -1039,7 +1038,7 @@ function App() {
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 overflow-y-auto">
           <div className="min-h-screen py-8 px-4">
             <div id="printable-form-container">
-              <PrintableForm onClose={() => setShowPrintableForm(false)} />
+              <FilledPrintableForm data={data} onClose={() => setShowPrintableForm(false)} />
             </div>
           </div>
         </div>

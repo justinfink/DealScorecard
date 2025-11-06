@@ -18,8 +18,6 @@ export const SearchConstraintsForm: React.FC<SearchConstraintsFormProps> = ({ da
     });
   };
 
-  const revenueSuggestions = ['0.5', '1', '2.5', '5', '10', '25', '50'];
-  const headcountSuggestions = ['5', '10', '25', '50', '100', '250', '500'];
 
   return (
     <div className="space-y-6">
@@ -39,18 +37,6 @@ export const SearchConstraintsForm: React.FC<SearchConstraintsFormProps> = ({ da
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="0.5"
           />
-          <div className="mt-1 flex flex-wrap gap-1">
-            {revenueSuggestions.map((val) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => handleChange('revenueMin', parseFloat(val))}
-                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded text-gray-600"
-              >
-                ${val}M
-              </button>
-            ))}
-          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -118,43 +104,17 @@ export const SearchConstraintsForm: React.FC<SearchConstraintsFormProps> = ({ da
       </div>
 
       {/* Headcount */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Headcount Min
-          </label>
-          <input
-            type="number"
-            value={data.headcountMin || ''}
-            onChange={(e) => handleChange('headcountMin', parseInt(e.target.value) || 0)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="5"
-          />
-          <div className="mt-1 flex flex-wrap gap-1">
-            {headcountSuggestions.map((val) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => handleChange('headcountMin', parseInt(val))}
-                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded text-gray-600"
-              >
-                {val}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Headcount Max
-          </label>
-          <input
-            type="number"
-            value={data.headcountMax || ''}
-            onChange={(e) => handleChange('headcountMax', parseInt(e.target.value) || 0)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="100"
-          />
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Headcount Max
+        </label>
+        <input
+          type="number"
+          value={data.headcountMax || ''}
+          onChange={(e) => handleChange('headcountMax', parseInt(e.target.value) || 0)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="100"
+        />
       </div>
 
       {/* Geography */}

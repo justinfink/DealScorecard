@@ -9,12 +9,10 @@ export const createInitialData = (): OnboardingData => ({
     primaryThesis: '',
     rightToWin: ['', '', ''],
     nonNegotiables: [],
-    goNoGo: 'go',
   },
   backgroundEdge: {
     experienceMap: {
       functionalStrengths: '',
-      industryFamiliarity: 0,
       dealExposure: '',
       operatingSuperpowers: [],
       knownGaps: [],
@@ -57,7 +55,6 @@ export const createInitialData = (): OnboardingData => ({
     ebitdaMax: 0,
     ebitdaMarginMin: 0,
     ebitdaMarginMax: 0,
-    headcountMin: 0,
     headcountMax: 0,
     geographyMustHave: [],
     geographyNiceToHave: [],

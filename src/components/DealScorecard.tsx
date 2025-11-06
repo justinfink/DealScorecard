@@ -29,14 +29,7 @@ export const DealScorecard: React.FC<DealScorecardProps> = ({ factors, onChange 
   const updateFactor = (id: string, field: 'weight' | 'score' | 'name' | 'definition', value: number | string) => {
     const updated = factors.map((factor) => {
       if (factor.id === id) {
-        const newValue = field === 'score' 
-          ? Math.max(0, Math.min(5, typeof value === 'number' ? value : 0))
-          : value;
-        const newFactor = { ...factor, [field]: newValue };
-        if (field === 'weight' || field === 'score') {
-          newFactor.weighted = ((newFactor.weight || 0) * (newFactor.score || 0)) / 100;
-        }
-        return newFactor;
+        return { ...factor, [field]: value };
       }
       return factor;
     });
@@ -60,9 +53,7 @@ export const DealScorecard: React.FC<DealScorecardProps> = ({ factors, onChange 
   };
 
   const removeFactor = (id: string) => {
-    if (confirm('Remove this factor? Weights will need to be adjusted.')) {
-      onChange(factors.filter(f => f.id !== id));
-    }
+    onChange(factors.filter(f => f.id !== id));
   };
 
   const [editValues, setEditValues] = useState<{ name: string; definition: string }>({ name: '', definition: '' });
@@ -83,30 +74,14 @@ export const DealScorecard: React.FC<DealScorecardProps> = ({ factors, onChange 
     setEditValues({ name: '', definition: '' });
   };
 
+  // Calculate dynamic total for weight column
   const totalWeight = factors.reduce((sum, f) => sum + (f.weight || 0), 0);
-  const totalWeighted = factors.reduce((sum, f) => sum + (f.weighted || 0), 0);
-
-  const getScoreColor = (score: number) => {
-    if (score >= 360) return 'text-green-600 font-semibold';
-    if (score >= 300) return 'text-yellow-600 font-semibold';
-    return 'text-red-600 font-semibold';
-  };
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 360) return 'Greenlight';
-    if (score >= 300) return 'Maybe';
-    return 'Pass';
-  };
 
   return (
     <div className="space-y-6">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-900">
-          <strong>Instructions:</strong> Score candidate companies 0–5 on each factor. Multiply by weights to get a 0–500 score.
-          Weights must sum to 100%. You can edit, add, or remove factors.
-        </p>
-        <p className="text-sm text-blue-800 mt-2">
-          <strong>Cutoffs:</strong> Greenlight: ≥ 360/500 | Maybe: 300–359/500 | Pass: &lt; 300/500
+          <strong>Instructions:</strong> Assign weight percentages to each factor. All weights must sum to 100%. You can edit, add, or remove factors.
         </p>
       </div>
 
@@ -160,8 +135,6 @@ export const DealScorecard: React.FC<DealScorecardProps> = ({ factors, onChange 
               <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Factor</th>
               <th className="border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Definition</th>
               <th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700 w-32">Weight (%)</th>
-              <th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700 w-32">Score (0–5)</th>
-              <th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700 w-32">Weighted</th>
               <th className="border border-gray-300 px-4 py-3 text-center text-sm font-semibold text-gray-700 w-24">Actions</th>
             </tr>
           </thead>
@@ -220,20 +193,6 @@ export const DealScorecard: React.FC<DealScorecardProps> = ({ factors, onChange 
                   />
                 </td>
                 <td className="border border-gray-300 px-4 py-3">
-                  <input
-                    type="number"
-                    min="0"
-                    max="5"
-                    step="0.5"
-                    value={factor.score || ''}
-                    onChange={(e) => updateFactor(factor.id, 'score', parseFloat(e.target.value) || 0)}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </td>
-                <td className="border border-gray-300 px-4 py-3 text-center font-medium">
-                  {(factor.weighted || 0).toFixed(1)}
-                </td>
-                <td className="border border-gray-300 px-4 py-3">
                   <div className="flex items-center justify-center gap-2">
                     {editingId === factor.id ? (
                       <>
@@ -279,7 +238,7 @@ export const DealScorecard: React.FC<DealScorecardProps> = ({ factors, onChange 
               </tr>
             )) : (
               <tr>
-                <td colSpan={6} className="border border-gray-300 px-4 py-3 text-center text-gray-500">
+                <td colSpan={4} className="border border-gray-300 px-4 py-3 text-center text-gray-500">
                   No factors yet. Add one above.
                 </td>
               </tr>
@@ -299,13 +258,6 @@ export const DealScorecard: React.FC<DealScorecardProps> = ({ factors, onChange 
                     {totalWeight < 100 ? 'Under' : 'Over'} 100%
                   </span>
                 )}
-              </td>
-              <td className="border border-gray-300 px-4 py-3 text-center">—</td>
-              <td className={`border border-gray-300 px-4 py-3 text-center text-lg ${getScoreColor(totalWeighted)}`}>
-                {totalWeighted.toFixed(1)}/500
-                <span className="text-xs block text-gray-600 mt-1">
-                  {getScoreLabel(totalWeighted)}
-                </span>
               </td>
               <td className="border border-gray-300 px-4 py-3"></td>
             </tr>

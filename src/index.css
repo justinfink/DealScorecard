@@ -40,6 +40,81 @@ body {
     page-break-before: always;
   }
 
+  /* Prevent boxes/fields from breaking across pages - STRONG RULES */
+  .print-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .print-field-box {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+
+  /* Major sections start on new page (except first one) */
+  .print-major-section {
+    page-break-before: auto;
+    break-before: auto;
+  }
+
+  /* Sections 3+ start on new page */
+  .print-major-section.print-section-new-page {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* Keep field groups together */
+  .print-field-group {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Keep labels with their boxes - STRONG RULES */
+  .print-field-container {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Tables should not break across pages if possible */
+  table {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Lists should not break across pages - STRONG RULES */
+  ol, ul {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* List items should not break */
+  li {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Any element with border should not break */
+  [class*="border"] {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Divs with bg-gray-50 (boxes) should never break */
+  [class*="bg-gray-50"] {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
   /* Ensure checkboxes and borders print */
   .border-2 {
     border-width: 2px !important;
