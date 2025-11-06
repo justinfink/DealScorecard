@@ -28,27 +28,34 @@ export const generateFilledPDF = async (submissionData) => {
     if (isVercel) {
       // Use puppeteer-core with @sparticuz/chromium for Vercel
       puppeteer = await import('puppeteer-core');
-      const chromiumModule = await import('@sparticuz/chromium');
-      // Handle both default export and named exports
-      const chromium = chromiumModule.default || chromiumModule;
+      const chromium = await import('@sparticuz/chromium');
       
-      // Configure Chromium for Vercel
-      // executablePath can be a function or property depending on version
+      // @sparticuz/chromium exports are typically named exports
+      // executablePath is usually a function that returns a Promise
       let executablePath;
-      if (typeof chromium.executablePath === 'function') {
-        executablePath = await chromium.executablePath();
-      } else if (chromium.executablePath) {
-        executablePath = chromium.executablePath;
-      } else {
-        // Fallback: try to get executable path from chromium module
-        executablePath = await chromium.executablePath?.() || chromium.executablePath;
+      try {
+        // Try as function first (most common pattern)
+        if (chromium.executablePath && typeof chromium.executablePath === 'function') {
+          executablePath = await chromium.executablePath();
+        } else if (chromium.default && typeof chromium.default.executablePath === 'function') {
+          executablePath = await chromium.default.executablePath();
+        } else if (chromium.executablePath) {
+          executablePath = chromium.executablePath;
+        } else if (chromium.default?.executablePath) {
+          executablePath = chromium.default.executablePath;
+        } else {
+          throw new Error('Could not find executablePath in @sparticuz/chromium');
+        }
+      } catch (err) {
+        console.error('Error getting executablePath:', err);
+        throw new Error(`Failed to get Chromium executable path: ${err.message}`);
       }
       
       const launchOptions = {
-        args: chromium.args || [],
-        defaultViewport: chromium.defaultViewport || { width: 1920, height: 1080 },
+        args: chromium.args || chromium.default?.args || [],
+        defaultViewport: chromium.defaultViewport || chromium.default?.defaultViewport || { width: 1920, height: 1080 },
         executablePath: executablePath,
-        headless: chromium.headless !== undefined ? chromium.headless : true,
+        headless: chromium.headless !== undefined ? chromium.headless : (chromium.default?.headless !== undefined ? chromium.default.headless : true),
       };
 
       browser = await Promise.race([
