@@ -33,7 +33,7 @@ export const generateFilledPDF = async (submissionData) => {
       
       // Configure Chromium for Vercel
       // chromium.args already includes necessary library paths and flags
-      chromium.setGraphicsMode(false);
+      // Note: setGraphicsMode doesn't exist in this version
       
       const launchOptions = {
         args: chromium.args,
