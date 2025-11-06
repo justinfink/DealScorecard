@@ -5,7 +5,6 @@
     }
   },
   "buildCommand": "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm run build",
-  "installCommand": "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install",
-  "nodeVersion": "18.x"
+  "installCommand": "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install"
 }
 
