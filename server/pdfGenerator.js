@@ -28,19 +28,27 @@ export const generateFilledPDF = async (submissionData) => {
     if (isVercel) {
       // Use puppeteer-core with @sparticuz/chromium for Vercel
       puppeteer = await import('puppeteer-core');
-      const chromium = await import('@sparticuz/chromium');
+      const chromiumModule = await import('@sparticuz/chromium');
+      // Handle both default export and named exports
+      const chromium = chromiumModule.default || chromiumModule;
       
       // Configure Chromium for Vercel
       // executablePath can be a function or property depending on version
-      const executablePath = typeof chromium.executablePath === 'function' 
-        ? await chromium.executablePath() 
-        : chromium.executablePath;
+      let executablePath;
+      if (typeof chromium.executablePath === 'function') {
+        executablePath = await chromium.executablePath();
+      } else if (chromium.executablePath) {
+        executablePath = chromium.executablePath;
+      } else {
+        // Fallback: try to get executable path from chromium module
+        executablePath = await chromium.executablePath?.() || chromium.executablePath;
+      }
       
       const launchOptions = {
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
+        args: chromium.args || [],
+        defaultViewport: chromium.defaultViewport || { width: 1920, height: 1080 },
         executablePath: executablePath,
-        headless: chromium.headless,
+        headless: chromium.headless !== undefined ? chromium.headless : true,
       };
 
       browser = await Promise.race([
