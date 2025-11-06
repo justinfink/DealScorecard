@@ -1,4 +1,3 @@
-import puppeteer from 'puppeteer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync } from 'fs';
@@ -20,17 +19,47 @@ try {
 
 export const generateFilledPDF = async (submissionData) => {
   let browser;
+  let puppeteer;
+  
   try {
-    // Try to launch browser with timeout
-    browser = await Promise.race([
-      puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-      }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Browser launch timeout')), 10000)
-      ),
-    ]);
+    // Determine if we're in Vercel/serverless environment
+    const isVercel = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    
+    if (isVercel) {
+      // Use puppeteer-core with @sparticuz/chromium for Vercel
+      puppeteer = await import('puppeteer-core');
+      const chromium = await import('@sparticuz/chromium');
+      
+      // Configure Chromium for Vercel
+      chromium.setGraphicsMode(false);
+      
+      const launchOptions = {
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+      };
+
+      browser = await Promise.race([
+        puppeteer.default.launch(launchOptions),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Browser launch timeout')), 10000)
+        ),
+      ]);
+    } else {
+      // Use regular puppeteer for local development
+      puppeteer = await import('puppeteer');
+      
+      browser = await Promise.race([
+        puppeteer.default.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Browser launch timeout')), 10000)
+        ),
+      ]);
+    }
     
     const page = await browser.newPage();
     
