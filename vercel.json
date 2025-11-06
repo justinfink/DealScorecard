@@ -3,6 +3,8 @@
     "api/**/*.js": {
       "maxDuration": 30
     }
-  }
+  },
+  "buildCommand": "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm run build",
+  "installCommand": "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install"
 }
 

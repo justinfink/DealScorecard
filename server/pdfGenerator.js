@@ -48,7 +48,14 @@ export const generateFilledPDF = async (submissionData) => {
       ]);
     } else {
       // Use regular puppeteer for local development
-      puppeteer = await import('puppeteer');
+      // Try puppeteer first, fallback to puppeteer-core if puppeteer not available
+      try {
+        puppeteer = await import('puppeteer');
+      } catch (e) {
+        // Fallback to puppeteer-core for local if puppeteer not installed
+        puppeteer = await import('puppeteer-core');
+        console.warn('Using puppeteer-core instead of puppeteer');
+      }
       
       browser = await Promise.race([
         puppeteer.default.launch({
