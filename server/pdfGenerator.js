@@ -28,44 +28,29 @@ export const generateFilledPDF = async (submissionData) => {
     if (isVercel) {
       // Use puppeteer-core with @sparticuz/chromium for Vercel
       puppeteer = await import('puppeteer-core');
-      const chromium = await import('@sparticuz/chromium');
+      const chromiumModule = await import('@sparticuz/chromium');
+      const chromium = chromiumModule.default;
       
-      // @sparticuz/chromium exports are typically named exports
-      // executablePath is usually a function that returns a Promise
-      let executablePath;
-      try {
-        console.log('Chromium module keys:', Object.keys(chromium));
-        console.log('chromium.executablePath type:', typeof chromium.executablePath);
-        console.log('chromium.default:', chromium.default ? Object.keys(chromium.default) : 'undefined');
-        
-        // Try as function first (most common pattern)
-        if (chromium.executablePath && typeof chromium.executablePath === 'function') {
-          console.log('Using chromium.executablePath() as function');
-          executablePath = await chromium.executablePath();
-        } else if (chromium.default && typeof chromium.default.executablePath === 'function') {
-          console.log('Using chromium.default.executablePath() as function');
-          executablePath = await chromium.default.executablePath();
-        } else if (chromium.executablePath) {
-          console.log('Using chromium.executablePath as property');
-          executablePath = chromium.executablePath;
-        } else if (chromium.default?.executablePath) {
-          console.log('Using chromium.default.executablePath as property');
-          executablePath = chromium.default.executablePath;
-        } else {
-          throw new Error('Could not find executablePath in @sparticuz/chromium');
-        }
-        console.log('Executable path resolved:', executablePath ? 'found' : 'not found');
-      } catch (err) {
-        console.error('Error getting executablePath:', err);
-        console.error('Chromium module structure:', JSON.stringify(Object.keys(chromium || {})));
-        throw new Error(`Failed to get Chromium executable path: ${err.message}`);
-      }
+      // Get executable path - it's a function in chromium.default
+      const executablePath = await chromium.executablePath();
       
+      // Configure Chromium for Vercel with all necessary args
+      // @sparticuz/chromium provides args that include necessary library paths
       const launchOptions = {
-        args: chromium.args || chromium.default?.args || [],
-        defaultViewport: chromium.defaultViewport || chromium.default?.defaultViewport || { width: 1920, height: 1080 },
+        args: [
+          ...chromium.args,
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-setuid-sandbox',
+          '--no-first-run',
+          '--no-sandbox',
+          '--no-zygote',
+          '--single-process',
+          '--disable-extensions',
+        ],
+        defaultViewport: chromium.defaultViewport || { width: 1920, height: 1080 },
         executablePath: executablePath,
-        headless: chromium.headless !== undefined ? chromium.headless : (chromium.default?.headless !== undefined ? chromium.default.headless : true),
+        headless: chromium.headless || true,
       };
 
       browser = await Promise.race([
