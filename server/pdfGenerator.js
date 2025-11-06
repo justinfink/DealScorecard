@@ -31,8 +31,6 @@ export const generateFilledPDF = async (submissionData) => {
       const chromium = await import('@sparticuz/chromium');
       
       // Configure Chromium for Vercel
-      chromium.setGraphicsMode(false);
-      
       const launchOptions = {
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
