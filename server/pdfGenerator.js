@@ -31,26 +31,15 @@ export const generateFilledPDF = async (submissionData) => {
       const chromiumModule = await import('@sparticuz/chromium');
       const chromium = chromiumModule.default;
       
-      // Get executable path - it's a function in chromium.default
-      const executablePath = await chromium.executablePath();
+      // Configure Chromium for Vercel
+      // chromium.args already includes necessary library paths and flags
+      chromium.setGraphicsMode(false);
       
-      // Configure Chromium for Vercel with all necessary args
-      // @sparticuz/chromium provides args that include necessary library paths
       const launchOptions = {
-        args: [
-          ...chromium.args,
-          '--disable-gpu',
-          '--disable-dev-shm-usage',
-          '--disable-setuid-sandbox',
-          '--no-first-run',
-          '--no-sandbox',
-          '--no-zygote',
-          '--single-process',
-          '--disable-extensions',
-        ],
-        defaultViewport: chromium.defaultViewport || { width: 1920, height: 1080 },
-        executablePath: executablePath,
-        headless: chromium.headless || true,
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
       };
 
       browser = await Promise.race([
