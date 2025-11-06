@@ -15,7 +15,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const submissionData = req.body;
+    // Vercel automatically parses JSON body, but ensure it's an object
+    const submissionData = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     
     // Generate PDF with filled data - EXACT SAME AS /api/submit
     let pdfBuffer = null;

@@ -21,7 +21,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const submissionData = req.body;
+    // Vercel automatically parses JSON body, but ensure it's an object
+    const submissionData = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
     // Allow partial submissions - email is optional but preferred
     const email = submissionData.email?.trim() || null;
