@@ -1,0 +1,6 @@
+node_modules/
+.env
+torchlight.db
+torchlight.db-journal
+*.log
+.DS_Store

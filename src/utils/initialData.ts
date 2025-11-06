@@ -1,0 +1,141 @@
+import { OnboardingData, PRE_BUILT_SCORECARD_FACTORS } from '../types';
+
+export const createInitialData = (): OnboardingData => ({
+  email: '',
+  quickSummary: {
+    searcherName: '',
+    homeBase: '',
+    targetCloseWindow: '',
+    primaryThesis: '',
+    rightToWin: ['', '', ''],
+    nonNegotiables: [],
+    goNoGo: 'go',
+  },
+  backgroundEdge: {
+    experienceMap: {
+      functionalStrengths: '',
+      industryFamiliarity: 0,
+      dealExposure: '',
+      operatingSuperpowers: [],
+      knownGaps: [],
+    },
+    credibilityAnchors: {
+      logosRoles: '',
+      regulatoryDomains: '',
+      audienceTrusted: '',
+    },
+  },
+  scorecard: PRE_BUILT_SCORECARD_FACTORS.map((factor) => ({
+    ...factor,
+    weight: 10, // 10 factors, 10% each = 100%
+    score: 0,
+    weighted: 0,
+  })),
+  prioritiesNonNegotiables: {
+    priorityStack: {
+      growthRate: 0,
+      profitability: 0,
+      recurringRevenue: 0,
+      lowPeopleIntensity: 0,
+      regSimplicity: 0,
+      ownerSuccessionTiming: 0,
+      geography: 0,
+      missionValues: 0,
+    },
+    nonNegotiables: {
+      industryExclusions: [],
+      businessModelExclusions: [],
+      customerMixExclusions: [],
+      contractRevExclusions: [],
+      peopleRiskExclusions: [],
+    },
+  },
+  searchConstraints: {
+    revenueMin: 0,
+    revenueMax: 0,
+    ebitdaMin: 0,
+    ebitdaMax: 0,
+    ebitdaMarginMin: 0,
+    ebitdaMarginMax: 0,
+    headcountMin: 0,
+    headcountMax: 0,
+    geographyMustHave: [],
+    geographyNiceToHave: [],
+    ownerAge: '',
+    ownerIntent: '',
+    dealStructures: {
+      sba: false,
+      cash: false,
+      sellerNote: false,
+      earnout: false,
+      minority: false,
+    },
+  },
+  rightToWinMechanics: {
+    existingChannels: '',
+    referrersAdvisors: '',
+    proofPoints: '',
+    synergies: '',
+    ninetyDayAdvantages: '',
+  },
+  icpBuyingMotion: {
+    primaryICP: '',
+    budgetOwners: '',
+    buyingTriggers: '',
+    whereTheyHangOut: '',
+    salesCycleLength: '',
+  },
+  riskMitigations: [],
+  subNicheIdentification: {
+    coreNicheCandidates: [],
+    adjacencyMatrix: [],
+    keywordClusterA: '',
+    keywordClusterB: '',
+    similarToSeedList: [],
+  },
+  dealFlowSufficiency: {
+    queryReadiness: {
+      clearKeywordSet: false,
+      exclusionsDefined: false,
+      naicsSicMapped: false,
+      geoFocusWorkable: false,
+    },
+    volumeQuality: {
+      estTAM: '',
+      qualifyingAfterExclusions: '',
+      topQuartileFitCount: '',
+      conclusion: 'sufficient',
+    },
+    remediation: {
+      widenGeo: false,
+      expandAdjacencies: false,
+      loosenRevenueBand: false,
+      addChannelsPartners: false,
+    },
+  },
+  operatingPlanHooks: {
+    hundredDayValuePlan: [],
+    retentionPlan: '',
+    pricingUpliftLevers: '',
+    crossSellAssets: '',
+  },
+  funnelKPI: {
+    searchKPIs: {
+      weeklyTargetsAdded: 0,
+      newConvosPerWeek: 0,
+      ioIsPerMonth: 0,
+    },
+    postCloseKPIs: {
+      mrrRetainerPercent: 0,
+      grossMargin: 0,
+      utilization: 0,
+      nrrExpansion: 0,
+      pipelineCoverageMonths: 0,
+    },
+  },
+  decisionGate: {
+    fitVerdict: 'proceed',
+    rationale: '',
+    nextActions: '',
+  },
+});
