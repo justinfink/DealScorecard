@@ -31,10 +31,15 @@ export const generateFilledPDF = async (submissionData) => {
       const chromium = await import('@sparticuz/chromium');
       
       // Configure Chromium for Vercel
+      // executablePath can be a function or property depending on version
+      const executablePath = typeof chromium.executablePath === 'function' 
+        ? await chromium.executablePath() 
+        : chromium.executablePath;
+      
       const launchOptions = {
         args: chromium.args,
         defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath(),
+        executablePath: executablePath,
         headless: chromium.headless,
       };
 
